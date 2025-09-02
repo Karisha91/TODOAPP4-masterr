@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@RestController// Allow React app
+@RestController
 @RequestMapping("/todos")
 public class TodoController {
 
@@ -48,9 +48,9 @@ public class TodoController {
         return ResponseEntity.ok(savedTodo);
     }
 
-    @PatchMapping("{todoId}/complete")
-    public Todo markTodoAsCompleted(@PathVariable Long todoId, Authentication authentication) {
-        return service.markTodoAsCompleted(todoId, authentication.getName());
+    @PatchMapping("{todoId}/toggle")
+    public Todo toggleTodoCompletion(@PathVariable Long todoId, Authentication authentication) {
+        return service.toggleTodoCompletion(todoId, authentication.getName());
     }
 
     //@GetMapping("/active")

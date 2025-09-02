@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -50,28 +51,35 @@ public class TodoService {
 
     @Transactional
     public Todo createTodo(TodoRequest request) {
-        User user = userRepo.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User with ID " + request.getUserId() + " not found"));
+        // Get the authenticated username from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        // Find the user by username (NOT by ID from request)
+        User user = userRepo.findByUsername(username);
+
+
+        // Create todo for THIS user only
         Todo todo = new Todo();
         todo.setTitle(request.getTitle());
         todo.setDescription(request.getDescription());
         todo.setCompleted(request.isCompleted());
         todo.setDueDate(request.getDueDate());
-        todo.setUser(user);  // Critical: Link the user
-        return todoRepo.save(todo);
+        todo.setUser(user);  // ← Always the authenticated user
 
+        return todoRepo.save(todo);
     }
 
-    public Todo markTodoAsCompleted(Long todoId, String username) {
+    public Todo toggleTodoCompletion(Long todoId, String username) {
         User user = userRepo.findByUsername(username);
         Todo todo = todoRepo.findById(todoId)
                 .orElseThrow(() -> new IllegalArgumentException("Todo not found"));
 
         if (!todo.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("Not authorized to complete this todo");
+            throw new IllegalStateException("Not authorized to modify this todo");
         }
 
-        todo.setCompleted(true);
+        todo.setCompleted(!todo.isCompleted()); // Toggle the completion status
         return todoRepo.save(todo);
     }
 
